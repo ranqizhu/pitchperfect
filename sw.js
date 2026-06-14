@@ -1,6 +1,6 @@
 // sw.js — tiny offline cache so the app installs as a real PWA and works
 // without a network. Bump CACHE when you change any cached file.
-const CACHE = "pitchperfect-v8";
+const CACHE = "pitchperfect-v9";
 const ASSETS = [
   "./", "./index.html", "./style.css",
   "./chords.js", "./audio.js", "./fx.js", "./app.js", "./vendor/Tone.js",

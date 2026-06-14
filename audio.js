@@ -22,6 +22,12 @@ const piano = (() => {
   let sampler = null, started = false, ready = false, silentEl = null;
   const nn = (l, o) => l + o;                 // [letter, octave] -> "C#4"
   const now = () => Tone.now();
+  // Audio output latency (ms) — large on iPad Safari, tiny on desktop. We add
+  // it so the spoken color name lands AFTER the actually-heard chord.
+  function outLatencyMs() {
+    try { const c = Tone.getContext().rawContext; return ((c.outputLatency || 0) + (c.baseLatency || 0)) * 1000; }
+    catch { return 0; }
+  }
 
   // --- iOS mute-switch bypass (a silent looping <audio> flips the audio
   // session to "playback" so Web Audio isn't silenced by the ring switch). ---
@@ -54,7 +60,7 @@ const piano = (() => {
 
       // Output polish: a touch of reverb for a natural room, then a loud-but-
       // clean ceiling. Volume in dB drives perceived loudness.
-      const vol = new Tone.Volume(4);
+      const vol = new Tone.Volume(1);
       // Short, light reverb — long convolution tails are costly on tablets.
       const reverb = new Tone.Reverb({ decay: 1.0, preDelay: 0.01, wet: 0.12 });
       const limiter = new Tone.Limiter(-1);
@@ -77,18 +83,20 @@ const piano = (() => {
     if (!ready) return 0;
     const t = now() + 0.03;
     if (!arpeggiate) {
-      notes.forEach(([l, o]) => sampler.triggerAttackRelease(nn(l, o), dur, t, 0.85));
+      // Lower per-note velocity so a 3-note chord stays under the limiter
+      // (avoids the sudden volume "pump" when all three sound together).
+      notes.forEach(([l, o]) => sampler.triggerAttackRelease(nn(l, o), dur, t, 0.7));
       return 0;
     }
     const gap = 0.26;
-    notes.forEach(([l, o], i) => sampler.triggerAttackRelease(nn(l, o), 0.5, t + i * gap, 0.8));
+    notes.forEach(([l, o], i) => sampler.triggerAttackRelease(nn(l, o), 0.5, t + i * gap, 0.72));
     const blockAt = t + notes.length * gap + 0.15;
-    notes.forEach(([l, o]) => sampler.triggerAttackRelease(nn(l, o), dur, blockAt, 0.95));
-    return Math.max(0, (blockAt - now()) * 1000 + 250);
+    notes.forEach(([l, o]) => sampler.triggerAttackRelease(nn(l, o), dur, blockAt, 0.7));
+    return Math.max(0, (blockAt - now()) * 1000 + 280 + outLatencyMs());
   }
 
   function playNote(letter, octave, dur = 1.6) {
-    if (ready) sampler.triggerAttackRelease(nn(letter, octave), dur, now() + 0.03, 1);
+    if (ready) sampler.triggerAttackRelease(nn(letter, octave), dur, now() + 0.03, 0.85);
   }
 
   function seq(events) {            // events: [[note, dur, offset, vel], ...]

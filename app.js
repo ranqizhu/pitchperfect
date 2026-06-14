@@ -73,11 +73,9 @@ function recordResult(id, correct) {
   const ss = sessionPerChord[id] || { correct: 0, total: 0 };
   ss.total += 1; if (correct) ss.correct += 1; sessionPerChord[id] = ss;
 }
-function speak(text) {
-  if (!state.settings.speak || !window.speechSynthesis) return;
-  const u = new SpeechSynthesisUtterance(text);
-  u.rate = 0.85; u.pitch = 1.2;
-  window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+// Speak a chord's color name using the bundled recorded voice clip.
+function announce(id) {
+  if (state.settings.speak) piano.sayColor(id);
 }
 
 // ---------- cards ----------
@@ -138,7 +136,7 @@ function nextTrial() {
     target = pickTarget(); prevTargetId = target.id; updateStatus();
     const delay = piano.playChord(target.notes, 1.8, state.settings.arpeggiate);
     flash(target, "reveal");
-    setTimeout(() => speak(target.name), delay);
+    setTimeout(() => announce(target.id), delay);
   }
 }
 
@@ -157,7 +155,7 @@ function onCardChosen(chord) {
   if (mode === "learn") { // free exploration
     const delay = piano.playChord(chord.notes, 1.8, state.settings.arpeggiate);
     flash(chord, "reveal");
-    setTimeout(() => speak(chord.name), delay);
+    setTimeout(() => announce(chord.id), delay);
     return;
   }
   if (locked || !target || pendingReveal) return;
@@ -169,14 +167,14 @@ function onCardChosen(chord) {
     sessionCorrect += 1;
     flash(target, "correct");
     setFeedback(`✓ ${target.name}!`, "ok");
-    speak("Yes! " + target.name);
+    announce(target.id);
     rewardCorrect(target);              // stars / combo / fx / maybe a sticker
   } else {
     combo = 0; updateCombo();
     flash(chord, "wrong");
     if (state.settings.reveal !== "never") flash(target, "reveal");
     setFeedback(`${target.name} — ${chordLetters(target)} (${chordSolfege(target)})`, "no");
-    speak(target.name);
+    announce(target.id);
   }
   trialIndex += 1; updateStatus(); saveState();
 
@@ -275,7 +273,7 @@ function updateStatus() {
 }
 function revealTarget() {
   if (!target) return;
-  flash(target, "reveal"); speak(target.name);
+  flash(target, "reveal"); announce(target.id);
 }
 
 function endSession() {
@@ -313,7 +311,7 @@ function doUnlock() {
   state.unlocked.push(next.id); state.lastUnlockISO = new Date().toISOString(); saveState();
   buildCards(); renderDashboard();
   el("unlockPrompt").classList.add("hidden");
-  speak("New color! " + next.name);
+  announce(next.id);
   if (effects()) { piano.fanfare(); bigText(`New color: ${next.name}! 🌈`); fx.bigCelebration(); }
 }
 

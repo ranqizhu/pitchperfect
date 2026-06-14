@@ -1,11 +1,14 @@
 // sw.js — tiny offline cache so the app installs as a real PWA and works
 // without a network. Bump CACHE when you change any cached file.
-const CACHE = "pitchperfect-v9";
+const CACHE = "pitchperfect-v10";
+const VOICE = ["red","yellow","blue","black","green","orange","purple","pink",
+               "brown","gray","tan","ltgreen","ltpurple","skyblue"].map((id) => `./voice/${id}.m4a`);
 const ASSETS = [
   "./", "./index.html", "./style.css",
   "./chords.js", "./audio.js", "./fx.js", "./app.js", "./vendor/Tone.js",
   "./manifest.webmanifest",
   "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png",
+  ...VOICE,
 ];
 // Piano samples are cached on first play via the runtime network-first handler.
 

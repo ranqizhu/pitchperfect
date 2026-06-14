@@ -29,6 +29,34 @@ const piano = (() => {
     catch { return 0; }
   }
 
+  // --- Recorded color-name voice. Web Speech (speechSynthesis) is unreliable
+  // in iOS standalone/Home-Screen apps, so we use bundled audio clips that play
+  // reliably everywhere and offline. ---
+  const VOICE_IDS = ["red","yellow","blue","black","green","orange","purple","pink",
+                     "brown","gray","tan","ltgreen","ltpurple","skyblue"];
+  const voice = {};
+  function loadVoices() {
+    if (Object.keys(voice).length) return;
+    VOICE_IDS.forEach((id) => {
+      const a = new Audio(`voice/${id}.m4a`);
+      a.preload = "auto"; a.setAttribute("playsinline", "");
+      voice[id] = a;
+    });
+  }
+  // Unlock HTMLAudio within the start gesture so later programmatic plays work on iOS.
+  function primeVoices() {
+    Object.values(voice).forEach((a) => {
+      a.muted = true;
+      const p = a.play();
+      if (p && p.then) p.then(() => { a.pause(); a.currentTime = 0; a.muted = false; }).catch(() => { a.muted = false; });
+      else a.muted = false;
+    });
+  }
+  function sayColor(id) {
+    const a = voice[id]; if (!a) return;
+    try { a.currentTime = 0; const p = a.play(); if (p && p.catch) p.catch(() => {}); } catch { /* ignore */ }
+  }
+
   // --- iOS mute-switch bypass (a silent looping <audio> flips the audio
   // session to "playback" so Web Audio isn't silenced by the ring switch). ---
   function silentWavUrl(seconds = 0.5, sr = 8000) {
@@ -55,6 +83,7 @@ const piano = (() => {
   async function resume() {
     if (!started) {
       started = true;
+      loadVoices(); primeVoices();     // unlock the voice clips within the gesture
       await Tone.start();              // unlock audio within the gesture
       bypassMuteSwitch();
 
@@ -92,7 +121,7 @@ const piano = (() => {
     notes.forEach(([l, o], i) => sampler.triggerAttackRelease(nn(l, o), 0.5, t + i * gap, 0.72));
     const blockAt = t + notes.length * gap + 0.15;
     notes.forEach(([l, o]) => sampler.triggerAttackRelease(nn(l, o), dur, blockAt, 0.7));
-    return Math.max(0, (blockAt - now()) * 1000 + 280 + outLatencyMs());
+    return Math.max(0, (blockAt - now()) * 1000 + 450 + outLatencyMs());
   }
 
   function playNote(letter, octave, dur = 1.6) {
@@ -121,5 +150,5 @@ const piano = (() => {
          ["C6", 0.9, 0.36, 0.7], ["E6", 0.9, 0.36, 0.7], ["G6", 0.9, 0.52, 0.7]]);
   }
 
-  return { resume, playChord, playNote, reward, sparkle, combo, fanfare };
+  return { resume, playChord, playNote, reward, sparkle, combo, fanfare, sayColor };
 })();

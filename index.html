@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Pitch Perfect</title>
+
+  <!-- PWA / iOS "Add to Home Screen" -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#7b5cff" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Pitch Perfect" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="icon" href="icon-192.png" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Celebration particle layer -->
+  <canvas id="fx"></canvas>
+
+  <!-- Floating background notes -->
+  <div id="bgnotes" aria-hidden="true"></div>
+
+  <!-- Start overlay (a tap is required to unlock audio) -->
+  <div id="startOverlay">
+    <div class="start-card">
+      <div class="logo-badge">🎵</div>
+      <h1>Pitch&nbsp;Perfect</h1>
+      <p class="sub">Let's learn the colors of sound!</p>
+      <button id="startBtn" class="big-btn pulse">▶&nbsp; Play</button>
+      <p class="tiny">Best with the volume up. See <code>GUIDE.md</code> for tips.</p>
+    </div>
+  </div>
+
+  <!-- Big center text for milestone callouts -->
+  <div id="bigText" class="big-text hidden"></div>
+
+  <!-- Main app -->
+  <div id="app" class="hidden">
+    <header>
+      <div class="title">🎵 Pitch Perfect</div>
+      <nav class="modes">
+        <button id="mode-quiz" class="mode-btn">🎮 Quiz</button>
+        <button id="mode-learn" class="mode-btn">👂 Learn</button>
+        <button id="mode-single" class="mode-btn">🎯 Notes</button>
+      </nav>
+      <button id="stickerBtn" class="sticker-btn" title="Sticker book">🏅 <span id="stickerCount">0</span></button>
+    </header>
+
+    <!-- Heads-up display: star meter + combo -->
+    <div class="hud">
+      <div class="star-meter" title="Fill the meter to win a sticker!">
+        <span class="star-ico">⭐</span>
+        <div class="meter"><div id="starMeterFill" class="meter-fill"></div></div>
+        <span id="starTotal" class="star-total">0</span>
+      </div>
+      <div id="comboBadge" class="combo-badge hidden">🔥 <span id="comboCount">0</span></div>
+    </div>
+
+    <p id="single-note-hint" class="banner hidden">
+      🎯 Advanced: plays the chord, then its top note alone. Use once the colors are solid.
+    </p>
+
+    <main>
+      <div class="play-row">
+        <button id="playBtn" class="play-btn" title="Play / replay (Space)">▶</button>
+        <div class="controls">
+          <button id="revealBtn" class="ctl">👀 Show</button>
+          <button id="nextBtn" class="ctl">⏭ Next</button>
+        </div>
+      </div>
+
+      <div id="status" class="status"></div>
+      <div id="feedback" class="feedback"></div>
+
+      <div id="cards" class="cards"></div>
+
+      <!-- Session summary -->
+      <div id="summary" class="modal hidden">
+        <div class="modal-card pop-in">
+          <div id="summaryText"></div>
+          <button id="summaryAgain" class="big-btn">Play again ▶</button>
+        </div>
+      </div>
+
+      <!-- Unlock prompt -->
+      <div id="unlockPrompt" class="modal hidden">
+        <div class="modal-card pop-in">
+          <div id="unlockText"></div>
+          <div class="modal-actions">
+            <button id="unlockYes" class="big-btn">Yes! 🌈</button>
+            <button id="unlockNo" class="ctl">Not yet</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sticker reveal (mystery egg) -->
+      <div id="revealModal" class="modal hidden">
+        <div class="modal-card pop-in reveal-card">
+          <div id="revealText">A surprise! Tap to open 🎁</div>
+          <button id="revealEgg" class="egg">🥚</button>
+          <div id="revealSticker" class="reveal-sticker hidden"></div>
+          <button id="revealCloseBtn" class="big-btn hidden">Yay! 🎉</button>
+        </div>
+      </div>
+
+      <!-- Sticker book -->
+      <div id="stickerBook" class="modal hidden">
+        <div class="modal-card book-card pop-in">
+          <h2>🏅 My Stickers <span id="stickerProgress" class="muted"></span></h2>
+          <div id="stickerGrid" class="sticker-grid"></div>
+          <button id="stickerCloseBtn" class="big-btn">Close</button>
+        </div>
+      </div>
+
+      <!-- In-app confirm (native confirm() is disabled in iOS standalone apps) -->
+      <div id="confirmModal" class="modal hidden">
+        <div class="modal-card pop-in">
+          <div id="confirmText"></div>
+          <div class="modal-actions">
+            <button id="confirmYes" class="big-btn">Yes</button>
+            <button id="confirmNo" class="ctl">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Parent dashboard -->
+    <section class="dashboard">
+      <h2>Parent dashboard</h2>
+      <div class="dash-top">
+        <div>Sessions: <b id="sessionCount">0</b></div>
+        <div>Stars: <b id="starsLifetime">0</b></div>
+        <div>Best streak: <b id="bestCombo">0</b></div>
+        <div id="nextColor"></div>
+        <button id="addColorBtn" class="ctl">➕ Add next color</button>
+        <button id="removeColorBtn" class="ctl">➖ Remove last color</button>
+      </div>
+      <div id="progressList" class="progress-list"></div>
+
+      <details class="settings">
+        <summary>⚙️ Settings</summary>
+        <label>Trials per session
+          <input id="trials" type="number" min="5" max="50" />
+        </label>
+        <label>Reveal answer
+          <select id="reveal">
+            <option value="after">After each guess</option>
+            <option value="always">Always</option>
+            <option value="never">Never</option>
+          </select>
+        </label>
+        <label class="checkbox"><input id="speak" type="checkbox" /> Speak color names aloud</label>
+        <label class="checkbox"><input id="arp" type="checkbox" /> Arpeggiate (notes one-by-one, then together)</label>
+        <label class="checkbox"><input id="effects" type="checkbox" /> Celebrations &amp; sound effects</label>
+        <button id="resetBtn" class="ctl danger">Reset all progress</button>
+      </details>
+    </section>
+  </div>
+
+  <script src="vendor/Tone.js"></script>
+  <script src="chords.js"></script>
+  <script src="audio.js"></script>
+  <script src="fx.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

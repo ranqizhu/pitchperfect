@@ -4,7 +4,7 @@
 // everything here is reward/feedback on top of the Eguchi chord method.
 
 const STORE_KEY = "pitchperfect_v1";
-const METER_TARGET = 5;       // correct answers per sticker reward
+const METER_TARGET = 15;      // correct answers per sticker reward (rarer = more special)
 const COMBO_MILESTONES = [3, 5, 8, 12, 16, 20, 25, 30];
 
 // Collectible stickers (unlocked one per filled star-meter).

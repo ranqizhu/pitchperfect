@@ -1,6 +1,6 @@
 // sw.js — tiny offline cache so the app installs as a real PWA and works
 // without a network. Bump CACHE when you change any cached file.
-const CACHE = "pitchperfect-v11";
+const CACHE = "pitchperfect-v12";
 const VOICE = ["red","yellow","blue","black","green","orange","purple","pink",
                "brown","gray","tan","ltgreen","ltpurple","skyblue"].map((id) => `./voice/${id}.m4a`);
 const ASSETS = [
